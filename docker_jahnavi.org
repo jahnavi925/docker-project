@@ -1,0 +1,429 @@
+#+Title: Document for Docker Project
+#+Author: Jahnavi Ayyanki
+#+Date: June 14, 2016
+
+* Introduction to Docker
+  Docker is an open-source technology that that allows you to build, run, test,
+  and deploy distributed applications inside software containers. It allows you
+  to package a piece of software in a standardized unit for software development,
+  containing everything the software needs to run: code, runtime, system tools,
+  system libraries, etc. Docker enables you to quickly, reliably, and
+  consistently deploy applications regardless of environment.
+
+  You can refer it [[https://www.docker.com/what-docker#/copy1][here]]
+
+* Benefits of Docker
+Advantages of docker :-
++ Docker provides lightweight virtualization technique.
++ The next significant advantage is that you can have many more containers
+  running on a single machine than you can with virtualization alone.
++ Another powerful impact is that container bringup and bringdown can be
+  accomplished within seconds.
+* How to Install docker on Ubuntu 14.04
+  Installation Instructions for Ubuntu:
+
+  + Update your droplet ::
+#+BEGIN_SRC command
+sudo apt-get update
+sudo apt-get -y upgrade
+#+END_SRC
+
++ Make sure aufs support is available ::
+#+BEGIN_SRC command
+sudo apt-get install linux-image-extra-`uname -r`
+#+END_SRC
+
++ Add docker repository key to apt-key for package verification ::
+#+BEGIN_SRC command
+sudo apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+#+END_SRC
+
++ Add the docker repository to Apt sources ::
+#+BEGIN_SRC command
+echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" | sudo tee /etc/apt/sources.list.d/docker.list
+#+END_SRC
+
++ Update the repository with the new addition ::
+#+BEGIN_SRC command
+sudo apt-get update
+#+END_SRC
+
++ Finally, download and install docker ::
+#+BEGIN_SRC command
+sudo apt-get install docker-engine
+#+END_SRC
+
+* Check if docker is installed 
+  + To check if docker is successfully installed run ::
+#+BEGIN_SRC command
+docker version
+#+END_SRC
+If you get the following output, then it is successfully installed
+#+BEGIN_SRC command
+Client:
+ Version:      1.11.2
+ API version:  1.23
+ Go version:   go1.5.4
+ Git commit:   b9f10c9
+ Built:        Wed Jun  1 21:47:50 2016
+ OS/Arch:      linux/amd64
+
+Server:
+ Version:      1.11.2
+ API version:  1.23
+ Go version:   go1.5.4
+ Git commit:   b9f10c9
+ Built:        Wed Jun  1 21:47:50 2016
+ OS/Arch:      linux/amd64
+#+END_SRC
+* Basic operations in docker 
+** Set up container using base image
+   + To create a writeable container layer over the specified image, and then start it using the specified command
+   #+BEGIN_SRC command
+   sudo docker run [options] [image] [command] [args]
+   #+END_SRC
+   - For eg:
+   #+BEGIN_SRC command
+   sudo docker run ubuntu:14.04 echo "Hello Docker"
+   #+END_SRC
+   - If the ubuntu:14.04 image is not present locally it will download it and then
+     will create a container and then will execute the command =echo= 
+
+** Create/delete Image
+ + Creating image ::
+   One can save the state of a container and thus can create its image:
+   #+BEGIN_SRC command
+   docker commit <container ID> <name of image>:<tag>
+   #+END_SRC
+   - for eg:
+   #+BEGIN_SRC command
+   docker commit edb2a9774df0 meghana/my_app:1.0
+   #+END_SRC
+   - If you run "docker images" you can verify your image
+
+ + Another way to create image :: Docker File  
+   + Configuration file used to build docker images
+   + More effective and easier compared to docker commit
+   + Docker file instructions
+     + FROM: for specifying the base image
+     + RUN: for specifying commands to execute
+     #+BEGIN_SRC command 
+     #Example of a Docker File
+     FROM ubuntu:14.04
+     RUN apt-get install -y  vim
+     RUN apt-get insatll -y curl
+     #+END_SRC
+
+     OR
+
+     #+BEGIN_SRC command
+     #Just another way of Docker File
+     FROM ubuntu:14.04
+     RUN apt-get update && apt-get install -y vim \
+                                         curl
+     #+END_SRC
+     The second method of dockerfile is more preferable as in first case for each run
+     command an intermediate container gets created and destroyed where as in
+     second method only one intermediate container will get created and destroyed
+     Thus Second method is more preferable.
+
+ + Building the Docker File
+    #+BEGIN_SRC command
+    docker build -t <repository:tag> <path>
+    #+END_SRC
+    - Now you can use this image "<repository>:<tag>" to create containers
+ + Some more info on Dockerfile
+    + CMD Instruction
+      - defines a default command that will execute when the container is
+        created/started whose base image is built using dockerfile
+      - will not perform any action when the image is being created
+      - can only be specified once in a dockerfile
+      - can be overriden at run time
+      For eg:
+      #+BEGIN_SRC command
+      FROM ubuntu:14.04
+      RUN apt-get update && apt-get install -y vim \
+                                         curl
+      CMD ping 127.0.0.1 -c 10                                       
+      #+END_SRC 
+   + ENTRYPOINT instruction
+     - defines the command that will run when the container is executed
+     - differnt from CMD instruction as ENTRYPOINT instruction will accept
+       arguments at run time
+     For eg:
+     #+BEGIN_SRC command
+     FROM ubuntu:14.04
+     RUN apt-get update && apt-get install -y vim \
+                                         curl
+     ENTRYPOINT ["ping"]                                      
+     #+END_SRC 
+     - The ENTRYPOINT instruction is given in exec form which will take
+       parameters in json format as it has to accept args at run time
+     - CMD instruction can also be given in esec format 
+     - For creating a container using the above Dockerfile:
+     #+BEGIN_SRC command
+     docker run <repository>:<tag> 127.0.0.1
+     #+END_SRC
+ 
+ + Deleting Images
+   #+BEGIN_SRC command
+   docker rmi <Image ID>
+   #+END_SRC
+   - You cannot delete an Image which is currently used by any active/non-active
+     containers
+
+** Create/Destroy a container 
+ + Create a new container ::
+   #+BEGIN_SRC command
+   docker create [OPTIONS] IMAGE [COMMAND] [ARG...]
+   #+END_SRC
+   - Creates a writeable container layer over the specified image
+   - Here container is never started. You can then use the "docker start
+     <container_id>" command to start the container at any point.
+   - This command is used to set up a container configuration ahead of time so
+     that it is ready to start when you need it.
+
+ + Destroy a container ::
+   #+BEGIN_SRC command
+   sudo docker rm <container ID>
+   #+END_SRC
+   - You cannot delete a container which is currently running. So first stop the
+     container and then delete it.
+** Start/Stop a container 
+ + To start one or more containers
+   #+BEGIN_SRC command
+   docker start [OPTIONS] CONTAINER [CONTAINER...]
+   #+END_SRC
+
+ + To stop one or more containers
+   #+BEGIN_SRC command
+   docker stop [OPTIONS] CONTAINER [CONTAINER...]
+   #+END_SRC
+
+ + To restart one or more container
+   #+BEGIN_SRC command
+   docker restart [OPTIONS] CONTAINER [CONTAINER...]
+   #+END_SRC
+** List containers 
+#+BEGIN_SRC command
+docker ps [options]
+#+END_SRC
+
+  + List the containers which are currently running
+    #+BEGIN_SRC command 
+    docker ps
+    #+END_SRC
+ 
+  + List all the containers(both running and stopped)
+    #+BEGIN_SRC command
+    docker ps -a
+    #+END_SRC
+    OR
+    #+BEGIN_SRC command
+    docker ps -ax
+    #+END_SRC
+** List processes in a container 
+ + Display the running processes of a container
+   #+BEGIN_SRC command
+   docker top [container]
+   #+END_SRC
+   OR
+   #+BEGIN_SRC command
+   docker exec [container] ps
+   #+END_SRC
+
+** How to create a container which can run forever
+- We can run a container as long as you don't kill the process with PID 1
+- If a process with PID 1 is killed inside a container then the container will
+  automatically shutdown.
+- In the "docker run [options] [image] [command]", the command which you give
+  will become the process with PID 1
+- If we give "bash" as command then the container will not shutdown until we
+  manually kill bash process in that container
+
++ The basic command to create and run a container is:
+  #+BEGIN_SRC command
+  docker run [options] [image] [command]
+  #+END_SRC
+  - So let us give bash command 
+  #+BEGIN_SRC command
+  docker run -i -t ubuntu:14.04 bash
+  #+END_SRC
+  - This command will create a new container and will take us inside the
+    container
+  - Now if you fire "ps -ax" you can see the bash process with PID 1
+  #+BEGIN_SRC command 
+  PID TTY      STAT   TIME COMMAND
+    1 ?        Ss+    0:00 bash
+   51 ?        R+     0:00 ps -ax
+  #+END_SRC
+  - So now if you fire "exit" you will kill the process bash and you will come out of the container and the
+    container gets shutdown
+  - If you want to come out of the container to be running in background fire:
+    #+BEGIN_SRC command
+    CTRL+P+Q
+    #+END_SRC
+** Get inside container 
+*** Case 1 :: You want to enter into a container as soon as you create it
+#+BEGIN_SRC command
+docker run -it <repository>:<tag> bash
+#+END_SRC
+-i flag to connect STDIN on the container
+-t flag to get a pseudo terminal
+
+*** case 2 :: You want to get inside a container which is running in background
+**** Method 1: Using exec command
+#+BEGIN_SRC comand
+docker exec -it <Container ID> bash
+#+END_SRC
+- To come out of the container without shutting it down:
+#+BEGIN_SRC command 
+CTRL+P+Q
+#+END_SRC
+OR
+#+BEGIN_SRC command
+exit
+#+END_SRC
+- To shutdown the container use "stop" command
+**** Method 2: Using Attach command
+#+BEGIN_SRC command
+docker attach <Container ID>
+#+END_SRC
+- You might need to hit Enter to bring up the prompt
+- To get out of the container without shutting it down
+#+BEGIN_SRC command
+CTRL+P+Q
+#+END_SRC
+- exit command will take you out of the container and will shutdown the container
+** Save the state of container 
+- One can commit a container and can create its image. Thus we can save the state
+  a container.
+  #+BEGIN_SRC command
+  docker commit <container ID> <Repository>:<tag>
+  #+END_SRC
+  - for eg:
+  #+BEGIN_SRC command
+  docker commit edb2a9774df0 meghana/my_app:1.0
+  #+END_SRC
+- If you run "docker images" you can verify your image
+** Few more basic operations
+ + display docker images
+   #+BEGIN_SRC command
+   sudo docker images
+   #+END_SRC
+
+ + Naming the container 
+   - If you do not specify the name of the container docker will automatically
+     assume any random name
+   - To give name to a container:
+     #+BEGIN_SRC command
+     sudo docker run -name <name of container> <image> <command>  
+     #+END_SRC
+   - You can always rename your container
+     #+BEGIN_SRC command
+     docker rename [OPTIONS] OLD_NAME NEW_NAME
+     #+END_SRC
+
+ + Container ID(long)
+   #+BEGIN_SRC command
+   sudo docker inspect <container>
+   #+END_SRC
+
+ + Running in detached mode 
+   #+BEGIN_SRC command
+   docker run -d [image] [command]
+   #+END_SRC
+   - This will run the command in the background and will automatically shuts down
+     the container after its execution
+
+ + Run a command in a running container
+   #+BEGIN_SRC command
+   docker exec [OPTIONS] CONTAINER COMMAND [ARG...]
+   #+END_SRC
+
+ + Pause all processes within a container
+   #+BEGIN_SRC command
+   docker pause CONTAINER [CONTAINER...]
+   #+END_SRC
+
+* Docker Hub
+** what is a Docker hub?
+The Docker Hub is a public registry maintained by Docker, Inc. It contains
+images you can download and use to build containers. It also provides
+authentication, work group structure, workflow tools like webhooks and build
+triggers, and privacy tools like private repositories for storing images you
+don't want to share publicly.
+You can refer [[https://docs.docker.com/docker-hub/][here]]
+** How to use Docker hub?
+*** Account creation and login
++ create a Docker ID
+  - You can do this through  [[https://hub.docker.com/][Docker Hub]]
++ Once you have a Docker ID, log into your account from the command line
+#+BEGIN_SRC command
+docker login
+#+END_SRC
+Once you have logged in from the command line, you can commit and push to
+interact with your repos on Docker Hub.
+*** Search for images
+You can search the Docker Hub registry via its search interface or by using the
+command line interface:
+#+BEGIN_SRC command
+docker search [image]
+#+END_SRC
+
+*** Pull images
+Once you've found the image you want, you can download it with
+#+BEGIN_SRC command
+docker pull <imagename>:
+#+END_SRC
+*** Push images
+In order to push an image int your docker hub the name of the image
+should be same as that of the repository in your docker hub account. 
+#+BEGIN_SRC command
+docker push yourname/newimage
+#+END_SRC
+The image will then be uploaded and available for use by your team-mates and/or
+the community.You can also make the repository private.
+For more info refer this [[https://docs.docker.com/engine/userguide/containers/dockerrepos/][link]]
+* Run a simple web application from container 
++ Create a Dockerfile with our required information as follows
+#+BEGIN_SRC command
+FROM ubuntu:14.04
+RUN export http_proxy="http://10.4.20.103:8080"
+RUN export https_proxy="http://10.4.20.103:8080"
+RUN echo 'Acquire::http::proxy "http://10.4.20.103:8080/";' > /etc/apt/apt.conf
+RUN echo 'Acquire::https::proxy "http://10.4.20.103:8080/";' >> /etc/apt/apt.conf
+RUN sudo apt-get -y update
+RUN apt-get install -y vim
+RUN apt-get install -y apache2
+EXPOSE 80
+#+END_SRC
+
++ Build the image
+#+BEGIN_SRC command
+docker build -t <repository>:<tag> .
+#+END_SRC
+
++ Create a container
+#+BEGIN_SRC command
+docker run -it -p 80:80 <repository>:<tag> bash
+#+END_SRC
+  - This will create a container pre-installed with apache web server
+  - This command will directly take you inside the container
+
++ Add a Html file
+#+BEGIN_SRC command
+cd cd /var/www/html/
+vim hello.html
+#Add some html content inside hello.html file
+cp hello.html index.html
+#+END_SRC
+
++ Start the apache server
+#+BEGIN_SRC command
+/etc/init.d/apache2 start
+#+END_SRC
+  - Now access the html file from the browser by typing the domain name or
+    IP Address of the container
+  - You should see the output of index.html
+ 
